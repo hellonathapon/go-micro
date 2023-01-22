@@ -12,7 +12,7 @@ import (
  * Routes map api endpoints to handlers
  */
 
-func routes() http.Handler {
+func (app *Config) routes() http.Handler {
 	mux := chi.NewRouter()
 
 	/*
@@ -28,6 +28,8 @@ func routes() http.Handler {
 	}))
 
 	mux.Use(middleware.Heartbeat("/ping"))
+
+	mux.Post("/", app.Broker)
 
 	return mux
 }
