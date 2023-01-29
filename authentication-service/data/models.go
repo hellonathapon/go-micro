@@ -59,6 +59,9 @@ func (u *User) GetAll() ([]*User, error) {
 
 	var users []*User
 
+	/*
+	 * Basically, it reads row by row and Scan/Copy the data from SQL db into Golang data struct
+	 */
 	for rows.Next() {
 		var user User
 		err := rows.Scan(
@@ -76,6 +79,9 @@ func (u *User) GetAll() ([]*User, error) {
 			return nil, err
 		}
 
+		/*
+		* Append every row copied to users slice
+		 */
 		users = append(users, &user)
 	}
 

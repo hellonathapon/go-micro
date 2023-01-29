@@ -21,3 +21,6 @@
 
 # Go workspace file
 go.work
+
+# Docker volumns database
+project/db-data
