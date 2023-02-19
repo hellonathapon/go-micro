@@ -11,11 +11,19 @@ type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
 	Log    LogPayload  `json:"log,omitempty"`
+	Mail   MailPayload `json:"mail,omitempty"`
 }
 
 type AuthPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type MailPayload struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Message string `json:"message"`
 }
 
 type LogPayload struct {
@@ -54,6 +62,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	switch requestPayload.Action {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
+	case "mail":
+		app.sendMail(w, requestPayload.Mail)
 	case "log":
 		app.logItem(w, requestPayload.Log)
 	default:
@@ -64,6 +74,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 
 func (app *Config) authenticate(w http.ResponseWriter, auth AuthPayload) {
 	// forward request to authentication service via http protocal
+	// encode to json, so it could be send across services which initially communicate via http protocal
+	// and expect json as data format.
 	jsonData, _ := json.MarshalIndent(auth, "", "\t")
 
 	// call authentication service
@@ -114,6 +126,8 @@ func (app *Config) authenticate(w http.ResponseWriter, auth AuthPayload) {
 
 func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
 	// forward request to logger service via http protocal
+	// encode to json, so it could be send across services which initially communicate via http protocal
+	// and expect json as data format.
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
 	loggerServiceURL := "http://logger-service/log"
@@ -143,6 +157,44 @@ func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
 	var payload jsonResponse
 	payload.Error = false
 	payload.Message = "logged"
+
+	app.writeJSON(w, http.StatusAccepted, payload)
+
+}
+
+func (app *Config) sendMail(w http.ResponseWriter, msg MailPayload) {
+
+	// encode to json, so it could be send across services which initially communicate via http protocal
+	// and expect json as data format.
+	jsonData, _ := json.MarshalIndent(msg, "", "\t")
+
+	mailServiceURL := "http://mail-service/send"
+
+	request, err := http.NewRequest("POST", mailServiceURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		app.errorJSON(w, errors.New("error calling mail service"))
+		return
+	}
+
+	payload := jsonResponse{
+		Error:   false,
+		Message: "Message sent to" + msg.To,
+	}
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 
