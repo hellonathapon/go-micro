@@ -1,5 +1,6 @@
 SHELL=cmd.exe
 FRONT_END_BINARY=frontApp.exe
+FRONT_BINARY=frontEndApp
 BROKER_BINARY=brokerApp
 AUTH_BINARY=authApp
 LOGGER_BINARY=loggerServiceApp
@@ -24,6 +25,12 @@ up_build: build_broker build_auth build_logger build_mailer build_listener
 down:
 	@echo Stopping docker compose...
 	docker-compose down
+	@echo Done!
+
+## build_front_linux: builds the front end binary as a linux executable
+build_front_linux:
+	@echo Building front end binary...
+	chdir ..\front-end && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ${FRONT_BINARY} ./cmd/web
 	@echo Done!
 
 ## build_broker: builds the broker binary as a linux executable
