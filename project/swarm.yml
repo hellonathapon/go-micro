@@ -2,11 +2,25 @@ version: "3"
 
 services:
 
-  front-end:
-    image: nathapon/front-end:1.0.0
+  caddy:
+    image: nathapon/micro-caddy:1.0.0
     deploy:
       mode: replicated
       replicas: 1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+  front-end:
+    image: nathapon/front-end:1.0.2
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      BROKER_URL: "http://backend"
 
   broker-service:
     image: nathapon/broker-service:1.0.1
@@ -75,10 +89,9 @@ services:
       - ./db-data/mongo/:/data/db
 
   postgres:
-    image: "postgres:14.0"
+    image: "postgres:14.2"
     ports:
       - "5433:5432"
-    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -88,3 +101,8 @@ services:
       POSTGRES_DB: users
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data
+
+volumes:
+  caddy_data:
+    external: true
+  caddy_config:
