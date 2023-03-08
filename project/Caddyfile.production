@@ -1,0 +1,38 @@
+{
+    email   hellonathapon@gmail.com
+}
+
+(static) {
+	@static {
+		file
+		path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.json
+	}
+	header @static Cache-Control max-age=5184000
+}
+
+(security) {
+	header {
+		# enable HSTS
+		Strict-Transport-Security max-age=31536000;
+		# disable clients from sniffing the media type
+		X-Content-Type-Options nosniff
+		# keep referrer data off of HTTP connections
+		Referrer-Policy no-referrer-when-downgrade
+	}
+}
+
+# Caddy sits in front of both Web server and Backend services
+# if the incoming request is from microservices.nathaponb.com Caddy reverses it to front-end service
+# but if the incoming request is from api.nathaponb.com Caddy reverses it to backend services
+
+microservices.nathaponb.com {
+	encode zstd gzip
+	import static
+    import security
+
+	reverse_proxy  http://front-end:8081
+}
+
+api.nathaponb.com {
+	reverse_proxy http://broker-service:8080
+}
